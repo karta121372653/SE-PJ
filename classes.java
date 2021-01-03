@@ -16,11 +16,19 @@ public class classes extends user{
 	private ArrayList<String> classTeacher = new ArrayList<String>();
 	private ArrayList<String> classType = new ArrayList<String>();
 	private int[][] classStudent = new int[30][20];
+	private String[][] classStudentScope = new String[30][20];
 	private File classes = new File("classes.txt");
 	private Scanner sc;
 	
 	classes(){
 		openClassesFile();
+	}
+	
+	public ArrayList<ArrayList<Integer>> returnClass() {
+		ArrayList<ArrayList<Integer>> arr = new ArrayList<ArrayList<Integer>>();
+		arr.add(classYear);
+		arr.add(classNum);
+		return arr;
 	}
 	
 	public String chaClassStudent(int classYear, int classNum, 
@@ -42,12 +50,14 @@ public class classes extends user{
 		int x=0;
 		while (this.classYear.get(x)!=classYear || this.classNum.get(x)!=classNum) x++;
 		int y=0;
-		while (classStudent[x][y] != studentNum) y++;
-		if (this.classYear.get(x)==classYear && this.classNum.get(x)==classNum && classStudent[x][y] == studentNum) {
-			for (int k=y; k<classStudent.length-1; k++) {
+		while (classStudent[x][y] != studentNum && y<19) y++;
+		if (this.classYear.get(x)==classYear && this.classNum.get(x)==classNum && classStudent[x][y]==studentNum) {
+			for (int k=y; k<classStudent[x].length-1; k++) {
 				classStudent[x][k] = classStudent[x][k+1];
+				classStudentScope[x][k] = classStudentScope[x][k+1];
 			}
-			classStudent[x][classStudent.length-1] = 0;
+			classStudent[x][classStudent[x].length-1] = 0;
+			classStudentScope[x][classStudentScope[x].length-1] = null;
 			writeClassesFile();
 			return "刪除成功";
 		}
@@ -62,9 +72,19 @@ public class classes extends user{
 		while (this.classYear.get(x)!=classYear || this.classNum.get(x)!=classNum) x++;
 		if (this.classYear.get(x)==classYear && this.classNum.get(x)==classNum) {
 			int y=0;
-			while (classStudent[x][y] != 0) y++;
+			while (classStudent[x][y] != 0) {
+				if (classStudent[x][y] == studentNum) return "已有此學生";
+				y++;
+			}
+			y--;
+			while (y>=0 && classStudent[x][y]>studentNum) {
+				classStudent[x][y+1] = classStudent[x][y];
+				classStudentScope[x][y+1] = classStudentScope[x][y];
+				y--;
+			}
+			y++;
 			classStudent[x][y] = studentNum;
-			studentSort(x);
+			classStudentScope[x][y] = "*";
 			writeClassesFile();
 			return "新增成功";
 		}
@@ -120,16 +140,17 @@ public class classes extends user{
 		
 		for (int i=classNum.size()-1; i>x; i--) {
 			classStudent[i] = classStudent[i-1];
+			classStudentScope[i] = classStudentScope[i-1];
 		}
 		classStudent[x][0] = 0;
 		writeClassesFile();
 		return "新增成功";
 	}
-	
-	public String delClasses(int delClassYear, int delClassNum) throws IOException {
+
+	public String delClasses(int delClassYear, String delClassName) throws IOException {
 		int x=0;
-		while (classNum.get(x)!=delClassNum || classYear.get(x)!=delClassYear) x++;
-		if (classNum.get(x)==delClassNum && classYear.get(x)==delClassYear) {
+		while (!className.get(x).equals(delClassName) || classYear.get(x)!=delClassYear) x++;
+		if (className.get(x).equals(delClassName) && classYear.get(x)==delClassYear) {
 			classYear.remove(x);
 			classNum.remove(x);
 			className.remove(x);
@@ -138,13 +159,13 @@ public class classes extends user{
 			classType.remove(x);
 			for (int i=x; i<classStudent.length-1; i++) {
 				classStudent[i] = classStudent[i+1];
+				classStudentScope[i] = classStudentScope[i+1];
 			}
 			classStudent[classNum.size()+1][0] = 0;
 			writeClassesFile();
 			return "刪除成功";
 		}
 		return "沒有此課程";
-		
 	}
 	
 	public String changeClasses(int oldClassNum, int chaClassNum, int chaClassYear, String chaClassName,
@@ -166,6 +187,19 @@ public class classes extends user{
 		writeClassesFile();
 		
 		return "修改成功";
+	}
+	
+	public String[] returnClass(int classYear, String className) {
+		String[] data = new String[6];
+		int x=0;
+		while (classYear!=this.classYear.get(x) || !this.className.get(x).equals(className)) x++;
+		data[0] = this.classYear.get(x)+"";
+		data[1] = this.classNum.get(x)+"";
+		data[2] = this.className.get(x);
+		data[3] = this.classPoint.get(x)+"";
+		data[4] = this.classTeacher.get(x);
+		data[5] = this.classType.get(x);
+		return data;
 	}
 	
 	public String[] printClass(int classYear) {
@@ -196,7 +230,9 @@ public class classes extends user{
 				classTeacher.add(str[4]);
 				classType.add(str[5]);
 				for (int i=6; i<str.length; i++) {
-					classStudent[classYear.size()-1][i-6] = Integer.parseInt(str[i]);
+					String[] acc_sco = str[i].split("-");
+					classStudent[classYear.size()-1][i-6] = Integer.parseInt(acc_sco[0]);
+					classStudentScope[classYear.size()-1][i-6] = acc_sco[1];
 				}
 			}
 			sc.close();
@@ -214,9 +250,9 @@ public class classes extends user{
 				String str = String.format("%d %06d %s %d %s %s ", classYear.get(i), classNum.get(i), 
 						className.get(i), classPoint.get(i), classTeacher.get(i), classType.get(i));
 				f.write(str);
-				for (int  j=0; j<classStudent[i].length; j++) {
+				for (int j=0; j<classStudent[i].length; j++) {
 					if (classStudent[i][j] != 0) {
-						f.write(classStudent[i][j]+" ");
+						f.write(classStudent[i][j]+"-"+classStudentScope[i][j]+" ");
 					}
 					else break;
 				}
@@ -228,5 +264,17 @@ public class classes extends user{
 			e.printStackTrace();
 		}
 	}
-	
+
+	public String[] printClassAll() {
+		ArrayList<String> classes = new ArrayList<String>();
+		for (int i=0; i<classNum.size(); i++) {
+			String str = String.format("%d-%s", this.classYear.get(i), className.get(i));
+			classes.add(str);
+		}
+		String[] classList = new String[classes.size()];
+		for (int i=0; i<classes.size(); i++) {
+			classList[i] = classes.get(i);
+		}
+		return classList;
+	}
 }
