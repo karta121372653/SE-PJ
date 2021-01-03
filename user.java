@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class user {
-	
 	private ArrayList<String> account = new ArrayList<String>();
 	private ArrayList<String> password = new ArrayList<String>();
 	private ArrayList<String> name = new ArrayList<String>();
@@ -16,10 +15,25 @@ public class user {
 	private Scanner sc;
 	private File accounts = new File("account.txt");
 	private String userAccount;
-	private int userIdenity;		// 0=管理員, 1=教授, 107以上=學生入學年
+	private int userIdenity;
 	private String userName;
 	user(){
 		openAccountfile();
+	}
+	
+	
+	public boolean checkPass(String checkPass) {
+		if (password.get(account.indexOf(userAccount)).equals(checkPass)) return true;
+		return false;
+	}
+	
+	public ArrayList[] printUsers() {
+		ArrayList[] str = new ArrayList[4];
+		str[0] = account;
+		str[1] = password;
+		str[2] = name;
+		str[3] = idenity;
+		return str;
 	}
 	
 	public String[] printUserInf() {
@@ -35,12 +49,13 @@ public class user {
 	}
 	
 	public String changeStudentInf(String oldStudentNum, String chaStudentNum, 
-			String chaStudentName, int chaStudentYear) throws IOException {
-		if (oldStudentNum.equals(chaStudentName) && this.account.indexOf(chaStudentNum)!=-1) {
+			String chaStudentPass, String chaStudentName, int chaStudentYear) throws IOException {
+		if (!oldStudentNum.equals(chaStudentNum) && this.account.indexOf(chaStudentNum)!=-1) {
 			return "已有此編號";
 		}
 		int x = this.account.indexOf(oldStudentNum);
 		account.set(x,  chaStudentNum);
+		password.set(x, chaStudentPass);
 		name.set(x, chaStudentName);
 		idenity.set(x, chaStudentYear);
 		
@@ -64,12 +79,17 @@ public class user {
 		if (this.account.indexOf(delAccount) == -1) {
 			return "沒有這個人";
 		}
+		if (delAccount.equals(delAccount)) return "你無法刪除自己";
 		int x = this.account.indexOf(delAccount);
 		this.name.remove(x);
 		this.password.remove(x);
 		this.account.remove(x);
 		this.idenity.remove(x);
-		
+		classes cl = new classes();
+		ArrayList<ArrayList<Integer>> arr = cl.returnClass();
+		for (int i=0; i<arr.get(0).size(); i++) {
+			cl.delClassStudent(arr.get(0).get(i), arr.get(1).get(i), Integer.parseInt(delAccount));
+		}
 		writeAccountfile();
 		return "刪除成功";
 	}
@@ -79,7 +99,7 @@ public class user {
 			return "已有此學號";
 		}
 		int x=0;
-		while (this.idenity.get(x)<=idenity && this.account.get(x).compareTo(account)<0) x++;
+		while (x<=this.account.size()-1 && this.idenity.get(x)<=idenity && Integer.parseInt(this.account.get(x))<Integer.parseInt(account)) x++;
 		this.account.add(x, account);
 		this.password.add(x, password);
 		this.name.add(x, name);
@@ -97,7 +117,7 @@ public class user {
 	}
 	
 	public String checkAccount(String num1, String num2) {
-			if (account.contains(num1)) {
+		if (account.contains(num1)) {
 			if (password.get(account.indexOf(num1)).equals(num2)) {
 				this.userAccount = num1;
 				this.userIdenity = idenity.get(account.indexOf(num1));
@@ -131,8 +151,8 @@ public class user {
 		try {
 			files = new FileWriter("account.txt");
 			for(int i=0; i<account.size(); i++){
-			files.write(this.account.get(i)+" "+this.password.get(i)+" "+
-					this.name.get(i)+" "+this.idenity.get(i)+"\n");
+				files.write(this.account.get(i)+" "+this.password.get(i)+" "+
+						this.name.get(i)+" "+this.idenity.get(i)+"\n");
 			}
 			files.close();
 		} 
@@ -141,8 +161,13 @@ public class user {
 		}
 	}
 
-	public boolean checkPass(String checkPass) {
-		if (password.get(account.indexOf(userAccount)).equals(checkPass)) return true;
-		return false;
+	public ArrayList<String> printStudent() {
+		ArrayList<String> arr = new ArrayList<String>();
+		for (int i=0; i<account.size(); i++) {
+			if (idenity.get(i)!=0 && idenity.get(i)!=1) {
+				arr.add(account.get(i)+" "+name.get(i));
+			}
+		}
+		return arr;
 	}
 }
